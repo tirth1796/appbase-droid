@@ -3,9 +3,7 @@ package client;
 import java.io.IOException;
 import java.net.Proxy;
 import java.net.ProxySelector;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +18,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.elasticsearch.index.query.QueryBuilder;
+import org.java_websocket.util.Base64;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -47,6 +46,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import requestbuilders.AppbaseRequestBuilder;
+import requestbuilders.AppbaseWebsocketRequest;
 import requestbuilders.Param;
 
 public class AppbaseClient {
@@ -166,8 +166,7 @@ public class AppbaseClient {
 	}
 
 	private OkHttpClient ok;
-	private String baseURL, app, URL;
-
+	private String baseURL, app, URL, basicauth = null;
 	private static final String SEPARATOR = "/";
 
 	/**
@@ -192,47 +191,53 @@ public class AppbaseClient {
 
 	}
 
+	private void setBasicAuth(String username, String password) {
+		basicauth = "Basic " + new String(Base64.encodeBytes((username + ":" + password).getBytes()));
+	}
+
 	private void initialize(String username, String password) {
-		ok =getUnsafeOkHttpClient().addInterceptor(new BasicAuthInterceptor(username, password)).build();
-//				new OkHttpClient.Builder().addInterceptor(new BasicAuthInterceptor(username, password)).build();
+		setBasicAuth(username, password);
+		ok = getUnsafeOkHttpClient().addInterceptor(new BasicAuthInterceptor(username, password)).build();
 
 	}
+
 	private static Builder getUnsafeOkHttpClient() {
-		  try {
-		    // Create a trust manager that does not validate certificate chains
-		    final TrustManager[] trustAllCerts = new TrustManager[] {
-		        new X509TrustManager() {
-		          public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-		          }
+		try {
+			// Create a trust manager that does not validate certificate chains
+			final TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
+				public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType)
+						throws CertificateException {
+				}
 
-		          public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
-		          }
+				public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType)
+						throws CertificateException {
+				}
 
-		          public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-		            return new java.security.cert.X509Certificate[]{};
-		          }
-		        }
-		    };
+				public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+					return new java.security.cert.X509Certificate[] {};
+				}
+			} };
 
-		    // Install the all-trusting trust manager
-		    final SSLContext sslContext = SSLContext.getInstance("SSL");
-		    sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
-		    // Create an ssl socket factory with our all-trusting manager
-		    final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+			// Install the all-trusting trust manager
+			final SSLContext sslContext = SSLContext.getInstance("SSL");
+			sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+			// Create an ssl socket factory with our all-trusting manager
+			final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
 
-		    OkHttpClient.Builder builder = new OkHttpClient.Builder();
-		    builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
-		    builder.hostnameVerifier(new HostnameVerifier() {
-		      public boolean verify(String hostname, SSLSession session) {
-		        return true;
-		      }
-		    });
+			OkHttpClient.Builder builder = new OkHttpClient.Builder();
+			builder.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0]);
+			builder.hostnameVerifier(new HostnameVerifier() {
+				public boolean verify(String hostname, SSLSession session) {
+					return true;
+				}
+			});
 
-		    return builder;
-		  } catch (Exception e) {
-		    throw new RuntimeException(e);
-		  }
+			return builder;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
+	}
+
 	/**
 	 * Constructor when the elasticsearch setup does not require user name and
 	 * password
@@ -250,7 +255,7 @@ public class AppbaseClient {
 	}
 
 	private void initialize() {
-		ok=getUnsafeOkHttpClient().build();
+		ok = getUnsafeOkHttpClient().build();
 	}
 
 	private String constructURL() {
@@ -327,6 +332,7 @@ public class AppbaseClient {
 	public String getSearchUrl(String type, String term) {
 		return URL + SEPARATOR + type + SEPARATOR + "_search?q=" + term;
 	}
+
 
 	/**
 	 * Setter for URL
@@ -495,7 +501,7 @@ public class AppbaseClient {
 	 */
 
 	public AppbaseRequestBuilder prepareUpdate(String type, String id, List<Param> parameters, String jsonDoc) {
-		return new AppbaseRequestBuilder(this).url(getURL(type,id) + SEPARATOR + "_update").post(createBody(jsonDoc))
+		return new AppbaseRequestBuilder(this).url(getURL(type, id) + SEPARATOR + "_update").post(createBody(jsonDoc))
 				.addQueryParams(parameters);
 	}
 
@@ -671,9 +677,9 @@ public class AppbaseClient {
 		System.out.println(result);
 		JsonParser parser = new JsonParser();
 		JsonObject object = parser.parse(result).getAsJsonObject();
-		Set<Map.Entry<String, JsonElement>> entries = object.getAsJsonObject(app)
-				.getAsJsonObject("mappings").entrySet();// will return members
-														// of your object
+		Set<Map.Entry<String, JsonElement>> entries = object.getAsJsonObject(app).getAsJsonObject("mappings")
+				.entrySet();// will return members
+							// of your object
 		JsonArray ret = new JsonArray();
 		for (Map.Entry<String, JsonElement> entry : entries) {
 			if (!entry.getKey().equals("_default_"))
@@ -765,6 +771,28 @@ public class AppbaseClient {
 	public AppbaseRequestBuilder prepareSearchStreamToURL(String type, String string, String string2) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+
+	private JsonObject getSearchStreamJson(String type, String request) {
+		JsonObject json = new JsonObject();
+		///////////how to get uid
+		
+		json.addProperty("id", "c");
+		if (basicauth != null)
+			json.addProperty("authorization", basicauth);
+		json.addProperty("path", app+SEPARATOR+type+SEPARATOR+"_search?streamonly=true");
+
+		JsonParser parser = new JsonParser();
+		
+		json.add("body", parser.parse(request).getAsJsonObject());
+		json.addProperty("method", "POST");
+		return json;
+	}
+	
+	
+	public AppbaseWebsocketRequest prepareSearchStream(String type, String request) {
+		return new AppbaseWebsocketRequest(getSearchStreamJson(type, request),baseURL);
 	}
 
 }

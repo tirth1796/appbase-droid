@@ -29,16 +29,20 @@ public class AppbaseWebsocketRequest {
 	}
 	
 	public AppbaseWebsocketClient execute(Stream appbaseOnMessage){
-		
+		URI uri=null;
+		try {
+			uri = new URI(baseURL);
+		} catch (URISyntaxException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
+		System.out.println(uri.toString());
 		AppbaseWebsocketClient client = null;
 		try {
-			client = new AppbaseWebsocketClient(new URI(baseURL), appbaseOnMessage);
+			client = new AppbaseWebsocketClient(uri, appbaseOnMessage);
 			client.connectBlocking();
 			System.out.println(json.toString());
 			client.send(json.toString());
-		} catch (URISyntaxException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

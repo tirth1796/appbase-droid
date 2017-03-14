@@ -8,9 +8,7 @@ public abstract class Stream{
     
     public void onClose(int code, String reason, boolean remote){} ;
     
-    public void onError(Exception ex){
-    	System.err.println(ex);
-    }
+    public void onError(Exception ex){}
 
 	public abstract void onMessage(String message);
 }

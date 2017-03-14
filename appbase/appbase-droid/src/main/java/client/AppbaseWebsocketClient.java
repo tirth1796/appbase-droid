@@ -30,22 +30,35 @@ public class AppbaseWebsocketClient extends WebSocketClient {
 
 	@Override
 	public void onOpen(ServerHandshake handshakedata) {
-		on.onOpen(handshakedata);
+		if (on != null)
+			on.onOpen(handshakedata);
+		else
+			System.out.println("null "+handshakedata.toString());
 	}
 
 	@Override
 	public void onClose(int code, String reason, boolean remote) {
-		on.onClose(code, reason, remote);
+		if (on != null)
+			on.onClose(code, reason, remote);
+		else
+			System.out.println("null close");
 	}
 
 	@Override
 	public void onError(Exception ex) {
-		on.onError(ex);
+		if (on != null)
+			on.onError(ex);
+		else
+			System.out.println("null "+ex.getMessage());
+		
 	}
 
 	@Override
 	public void onMessage(String message) {
-		on.onMessage(message);
+		if (on != null)
+			on.onMessage(message);
+		else
+			System.out.println("null "+message);
 	}
 
 	public void trustAllHosts() {

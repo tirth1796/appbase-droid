@@ -7,6 +7,7 @@ import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import javax.net.SocketFactory;
@@ -777,8 +778,13 @@ public class AppbaseClient {
 	private JsonObject getSearchStreamJson(String type, String request) {
 		JsonObject json = new JsonObject();
 		///////////how to get uid
-		
-		json.addProperty("id", "c");
+		Random r=new Random();
+		int n = r.nextInt(5) + 5;
+		String id = "";
+		for (int i = 0; i < n + 1; i++) {
+			id += (char) (r.nextInt(25) + 97) + "";
+		}
+		json.addProperty("id",id);
 		if (basicauth != null)
 			json.addProperty("authorization", basicauth);
 		json.addProperty("path", app+SEPARATOR+type+SEPARATOR+"_search?streamonly=true");

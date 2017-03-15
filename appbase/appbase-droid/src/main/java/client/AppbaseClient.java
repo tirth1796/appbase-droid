@@ -18,8 +18,6 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.elasticsearch.index.query.QueryBuilder;
-import org.java_websocket.util.Base64;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -36,6 +34,7 @@ import okhttp3.CertificatePinner;
 import okhttp3.ConnectionPool;
 import okhttp3.ConnectionSpec;
 import okhttp3.CookieJar;
+import okhttp3.Credentials;
 import okhttp3.Dispatcher;
 import okhttp3.Dns;
 import okhttp3.Interceptor;
@@ -193,7 +192,7 @@ public class AppbaseClient {
 	}
 
 	private void setBasicAuth(String username, String password) {
-		basicauth = "Basic " + new String(Base64.encodeBytes((username + ":" + password).getBytes()));
+		basicauth =Credentials.basic(username, password);
 	}
 
 	private void initialize(String username, String password) {
@@ -676,6 +675,7 @@ public class AppbaseClient {
 
 		String result = getMappings();
 		System.out.println(result);
+		
 		JsonParser parser = new JsonParser();
 		JsonObject object = parser.parse(result).getAsJsonObject();
 		Set<Map.Entry<String, JsonElement>> entries = object.getAsJsonObject(app).getAsJsonObject("mappings")
@@ -704,21 +704,21 @@ public class AppbaseClient {
 		return new AppbaseRequestBuilder(this).url(getURL(type) + SEPARATOR + "_search").post(createBody(body));
 	}
 
-	/**
-	 * Prepare an {@link AppbaseRequestBuild} object for searching without
-	 * adding the body which will need to be manually added
-	 * 
-	 * @param type
-	 *            type in which the search must take place
-	 * @param body
-	 *            the query body (example: {"query":{"term":{ "price" : 5595}}}
-	 *            )
-	 * @return returns the search result corresponding to the query
-	 */
-
-	public AppbaseRequestBuilder prepareSearch(String type, QueryBuilder qb) {
-		return prepareSearch(type, qb.toString());
-	}
+//	/**
+//	 * Prepare an {@link AppbaseRequestBuild} object for searching without
+//	 * adding the body which will need to be manually added
+//	 * 
+//	 * @param type
+//	 *            type in which the search must take place
+//	 * @param body
+//	 *            the query body (example: {"query":{"term":{ "price" : 5595}}}
+//	 *            )
+//	 * @return returns the search result corresponding to the query
+//	 */
+//
+//	public AppbaseRequestBuilder prepareSearch(String type, QueryBuilder qb) {
+//		return prepareSearch(type, qb.toString());
+//	}
 
 	/**
 	 * Prepare an {@link AppbaseRequestBuild} object for searching by adding the
@@ -735,21 +735,21 @@ public class AppbaseClient {
 		return new AppbaseRequestBuilder(this).url(getURL(type) + SEPARATOR + "_search").post(createBody(body));
 	}
 
-	/**
-	 * Prepare an {@link AppbaseRequestBuild} object for searching without
-	 * adding the body which will need to be manually added within multiple
-	 * types
-	 * 
-	 * @param type
-	 *            array of all the types in which the search must take place
-	 * @param body
-	 *            the query body (example: {"query":{"term":{ "price" : 5595}}}
-	 *            )
-	 * @return returns the search result corresponding to the query
-	 */
-	public AppbaseRequestBuilder prepareSearch(String[] type, QueryBuilder qb) {
-		return prepareSearch(type, qb.toString());
-	}
+//	/**
+//	 * Prepare an {@link AppbaseRequestBuild} object for searching without
+//	 * adding the body which will need to be manually added within multiple
+//	 * types
+//	 * 
+//	 * @param type
+//	 *            array of all the types in which the search must take place
+//	 * @param body
+//	 *            the query body (example: {"query":{"term":{ "price" : 5595}}}
+//	 *            )
+//	 * @return returns the search result corresponding to the query
+//	 */
+//	public AppbaseRequestBuilder prepareSearch(String[] type, QueryBuilder qb) {
+//		return prepareSearch(type, qb.toString());
+//	}
 
 	/**
 	 * Prepare an {@link AppbaseRequestBuild} object to search by passing the

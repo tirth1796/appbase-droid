@@ -19,6 +19,7 @@ public class Main {
 	static String type = "product", id = "1";
 
 	public static void main(String[] args) {
+		
 		AppbaseClient ac = new AppbaseClient(URL, appName, user, pass);
 		ac.prepareSearchStream(type, query).execute(new Stream() {
 			

@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.HostnameVerifier;
@@ -611,19 +613,35 @@ public class AppbaseClient {
 	 * When multiple requests need to be executed but in a sequence to reduce
 	 * the bandwidth usage.
 	 * 
-	 * @param requestBuilders
-	 *            an array of AppbaseRequestBuilders which need to be executed
-	 * @return Array of the listenable futures containing the responses of
-	 *         individual requests
+	 * @param type type of the objects
+	 * 
+	 * @param request The Request in bulk format.
+	 * 
+	 * @return The AppbaseRequestBuilder object for the query which needs to be executed.
 	 */
-	public Response[] bulkExecute(ArrayList<AppbaseRequestBuilder> requestBuilders) {
-		Response[] response = new Response[requestBuilders.size()];
-		for (int i = 0; i < requestBuilders.size(); i++) {
-			response[i] = (requestBuilders.get(i).execute());
-		}
-		return response;
-	}
+	
+	
 
+	public AppbaseRequestBuilder prepareBulkExecute(String type,String request) {
+
+		 return new AppbaseRequestBuilder(this).url(getURL(type, "_bulk")).post(createBody(request));
+	}
+	
+
+	/**
+	 * When multiple requests need to be executed but in a sequence to reduce
+	 * the bandwidth usage.
+	 * 
+	 * @param request The request in bulk format.
+	 * 
+	 * @return The AppbaseRequestBuilder object for the query which needs to be executed.
+	 */
+	
+	
+	public AppbaseRequestBuilder prepareBulkExecute(String request) {
+
+		 return new AppbaseRequestBuilder(this).url(getURL("_bulk")).post(createBody(request));
+	}
 	/**
 	 * 
 	 * Prepare an {@link AppbaseRequestBuild} object to get the indexed objects
@@ -704,22 +722,6 @@ public class AppbaseClient {
 		return new AppbaseRequestBuilder(this).url(getURL(type) + SEPARATOR + "_search").post(createBody(body));
 	}
 
-//	/**
-//	 * Prepare an {@link AppbaseRequestBuild} object for searching without
-//	 * adding the body which will need to be manually added
-//	 * 
-//	 * @param type
-//	 *            type in which the search must take place
-//	 * @param body
-//	 *            the query body (example: {"query":{"term":{ "price" : 5595}}}
-//	 *            )
-//	 * @return returns the search result corresponding to the query
-//	 */
-//
-//	public AppbaseRequestBuilder prepareSearch(String type, QueryBuilder qb) {
-//		return prepareSearch(type, qb.toString());
-//	}
-
 	/**
 	 * Prepare an {@link AppbaseRequestBuild} object for searching by adding the
 	 * query body within multiple types
@@ -734,22 +736,6 @@ public class AppbaseClient {
 	public AppbaseRequestBuilder prepareSearch(String[] type, String body) {
 		return new AppbaseRequestBuilder(this).url(getURL(type) + SEPARATOR + "_search").post(createBody(body));
 	}
-
-//	/**
-//	 * Prepare an {@link AppbaseRequestBuild} object for searching without
-//	 * adding the body which will need to be manually added within multiple
-//	 * types
-//	 * 
-//	 * @param type
-//	 *            array of all the types in which the search must take place
-//	 * @param body
-//	 *            the query body (example: {"query":{"term":{ "price" : 5595}}}
-//	 *            )
-//	 * @return returns the search result corresponding to the query
-//	 */
-//	public AppbaseRequestBuilder prepareSearch(String[] type, QueryBuilder qb) {
-//		return prepareSearch(type, qb.toString());
-//	}
 
 	/**
 	 * Prepare an {@link AppbaseRequestBuild} object to search by passing the
@@ -769,15 +755,31 @@ public class AppbaseClient {
 
 	}
 
-	public AppbaseRequestBuilder prepareSearchStreamToURL(String type, String string, String string2) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
+	public AppbaseRequestBuilder prepareSearchStreamToURL(String type, String query, String webhook) {
+		JsonParser parser = new JsonParser();
+		JsonObject object = parser.parse(query).getAsJsonObject();
+		JsonObject o = parser.parse(webhook).getAsJsonObject();
+		object.add("webhooks", o.get("webhooks"));
+		JsonArray arr = new JsonArray();
+		arr.add(type);
+		object.add("type", arr);
+		String path = ".percolator/webhooks-0-" + type + "-0-" + getSerializedJson(query);
+		return prepareIndex(path, object);
+	}
+	private String getSerializedJson(String query){
+		JsonParser parser = new JsonParser();
+		JsonObject object = parser.parse(query).getAsJsonObject();
+		Gson gson = new Gson();
+		TreeMap<String, Object> map = gson.fromJson(object, TreeMap.class);
+		String sortedJson = gson.toJson(map);
+		return sortedJson;
+		
+	}
+	
 
 	private JsonObject getSearchStreamJson(String type, String request) {
 		JsonObject json = new JsonObject();
-		///////////how to get uid
 		Random r=new Random();
 		int n = r.nextInt(5) + 5;
 		String id = "";

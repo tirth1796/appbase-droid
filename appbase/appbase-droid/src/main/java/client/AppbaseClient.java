@@ -601,12 +601,9 @@ public class AppbaseClient {
 	 * @return Array of the listenable futures containing the responses of
 	 *         individual requests
 	 */
-	public Response[] bulkExecute(AppbaseRequestBuilder[] requestBuilders) {
-		Response[] response = new Response[requestBuilders.length];
-		for (int i = 0; i < requestBuilders.length; i++) {
-			response[i] = (requestBuilders[i].execute());
-		}
-		return response;
+	public Response bulkExecute(String type,String request) {
+		return prepareBulkExecute(type,request).execute();
+		
 	}
 
 	/**

@@ -1,5 +1,0 @@
-client/AppbaseClient.class
-requestbuilders/AppbaseRequestBuilder.class
-interceptor/BasicAuthInterceptor.class
-trial/Main.class
-requestbuilders/Param.class

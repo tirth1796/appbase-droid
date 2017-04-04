@@ -1,2 +1,5 @@
-appbase/.recommenders/
-appbase/.metadata/
+.classpath
+.metadata/
+.project
+.settings/
+appbase/

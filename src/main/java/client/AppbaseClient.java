@@ -15,7 +15,6 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -51,17 +50,18 @@ public class AppbaseClient {
 	 * Constructor when the elasticsearch setup requires a user name and a
 	 * password
 	 * 
-	 * @param URL
+	 * @param baseURL
 	 *            The base URL(example: "http://scalr.api.appbase.io").
-	 * @param appName
+	 * @param app
 	 *            application name (example: "myFirstApp")
-	 * @param userName
+	 * @param username
 	 *            the user name provided for the application
 	 * @param password
 	 *            the password corresponding to the userName
 	 * 
 	 */
 	public AppbaseClient(String baseURL, String app, String username, String password) {
+
 		initialize(username, password);
 		this.baseURL = baseURL;
 		this.app = app;
@@ -70,7 +70,7 @@ public class AppbaseClient {
 	}
 
 	private void setBasicAuth(String username, String password) {
-		basicauth =Credentials.basic(username, password);
+		basicauth = Credentials.basic(username, password);
 	}
 
 	private void initialize(String username, String password) {
@@ -122,17 +122,28 @@ public class AppbaseClient {
 	 * 
 	 * @param URL
 	 *            The base URL(example: "http://scalr.api.appbase.io").
-	 * @param appName
+	 * @param app
 	 *            application name (example: "myFirstApp")
 	 */
 	public AppbaseClient(String URL, String app) {
-		initialize();
 		this.baseURL = URL;
+		initialize();
 		this.app = app;
 		constructURL();
 	}
 
 	private void initialize() {
+		if (baseURL.contains("://") && baseURL.contains("@")) {
+			int a = baseURL.indexOf("://");
+			int b = baseURL.indexOf("@");
+			if (baseURL.substring(a + 3, b).contains(":")) {
+				String[] x = baseURL.substring(a + 3, b).split(":");
+				setBasicAuth(x[0], x[1]);
+				ok = getUnsafeOkHttpClient().addInterceptor(new BasicAuthInterceptor(x[0], x[1])).build();
+			}
+			this.baseURL = baseURL.substring(0, a + 3) + baseURL.substring(b + 1);
+			return;
+		}
 		ok = getUnsafeOkHttpClient().build();
 	}
 
@@ -149,13 +160,12 @@ public class AppbaseClient {
 
 	// getURls
 
-	//querify
-	private String querify(String body){
-		return "{\"query\":"+body+"}";
-		
+	// querify
+	private String querify(String body) {
+		return "{\"query\":" + body + "}";
+
 	}
-	
-	
+
 	/**
 	 * Returns the constructed URL based on the type argument.
 	 * 
@@ -191,39 +201,7 @@ public class AppbaseClient {
 	private String getURL(String type, String id) {
 		return URL + SEPARATOR + type + SEPARATOR + id;
 	}
-//
-//	/**
-//	 * returns the constructed URL by adding a search term as its query
-//	 * parameter.
-//	 * 
-//	 * @param term
-//	 *            the term to be searched
-//	 * @return Search URL with the term as a query parameter
-//	 */
-//	private String getSearchUrl(String term) {
-//		return URL + SEPARATOR + "_search?q=" + term;
-//	}
-//
-//	/**
-//	 * 
-//	 * returns the constructed URL for a type by adding the search term as its
-//	 * query parameter.
-//	 * 
-//	 * @param type
-//	 * @param term
-//	 *            the term to be searched
-//	 * @return Search URL with the term as a query parameter
-//	 */
-//	private String getSearchUrl(String type, String term) {
-//		return URL + SEPARATOR + type + SEPARATOR + "_search?q=" + term;
-//	}
-//
 
-	/**
-	 * Setter for URL
-	 * 
-	 * @param URL
-	 */
 	public void setURL(String URL) {
 		this.baseURL = URL;
 		constructURL();
@@ -245,9 +223,16 @@ public class AppbaseClient {
 	 * @return request builder with the provided configurations
 	 */
 	public AppbaseRequestBuilder prepareIndex(String type, String jsonDoc) {
-		return new AppbaseRequestBuilder(this,type,null,AppbaseRequestBuilder.Index).url(getURL(type)).post(jsonDoc);
+		return new AppbaseRequestBuilder(this, type, null, AppbaseRequestBuilder.Index).url(getURL(type)).post(jsonDoc);
 	}
 
+	/**
+	 * The {@link String} body is converted to {@link RequestBody}
+	 * 
+	 * @param jsonDoc
+	 *            The {@link String} body which needs to be converted.
+	 * @return The {@link RequestBody} object for the given String.
+	 */
 	public static RequestBody createBody(String jsonDoc) {
 		return RequestBody.create(JSON, jsonDoc);
 	}
@@ -311,7 +296,8 @@ public class AppbaseClient {
 
 	public AppbaseRequestBuilder prepareIndex(String type, String id, String jsonDoc) {
 
-		return new AppbaseRequestBuilder(this,type,id,AppbaseRequestBuilder.Index).url(getURL(type, id)).put(jsonDoc);
+		return new AppbaseRequestBuilder(this, type, id, AppbaseRequestBuilder.Index).url(getURL(type, id))
+				.put(jsonDoc);
 	}
 
 	/**
@@ -368,7 +354,7 @@ public class AppbaseClient {
 	}
 
 	/**
-	 * To prepare a {@link AppbaseRequestBuild} object to update a document. We
+	 * To prepare a {@link AppbaseRequestBuilder} object to update a document. We
 	 * can pass just the portion of the object to be updated. parameters is a
 	 * list of parameters which are the name value pairs which will be added
 	 * during the execution
@@ -386,12 +372,12 @@ public class AppbaseClient {
 	 */
 
 	public AppbaseRequestBuilder prepareUpdate(String type, String id, List<Param> parameters, String jsonDoc) {
-		return new AppbaseRequestBuilder(this,type,id,AppbaseRequestBuilder.Update).url(getURL(type, id) + SEPARATOR + "_update").post(jsonDoc)
-				.addQueryParams(parameters);
+		return new AppbaseRequestBuilder(this, type, id, AppbaseRequestBuilder.Update)
+				.url(getURL(type, id) + SEPARATOR + "_update").post(jsonDoc).addQueryParams(parameters);
 	}
 
 	/**
-	 * To prepare a {@link AppbaseRequestBuild} object to update a document. We
+	 * To prepare a {@link AppbaseRequestBuilder} object to update a document. We
 	 * can pass just the portion of the object to be updated. parameters is a
 	 * list of parameters which are the name value pairs which will be added
 	 * during the execution
@@ -413,7 +399,7 @@ public class AppbaseClient {
 	}
 
 	/**
-	 * To prepare a {@link AppbaseRequestBuild} object to update a document. We
+	 * To prepare a {@link AppbaseRequestBuilder} object to update a document. We
 	 * can pass just the portion of the object to be updated. parameters is a
 	 * list of parameters which are the name value pairs which will be added
 	 * during the execution
@@ -436,7 +422,7 @@ public class AppbaseClient {
 	}
 
 	/**
-	 * To prepare a {@link AppbaseRequestBuild} object to update a document. We
+	 * To prepare a {@link AppbaseRequestBuilder} object to update a document. We
 	 * can pass just the portion of the object to be updated. parameters is a
 	 * list of parameters which are the name value pairs which will be added
 	 * during the execution
@@ -462,7 +448,7 @@ public class AppbaseClient {
 	}
 
 	/**
-	 * To prepare an {@link AppbaseRequestBuild} object to delete a document.
+	 * To prepare an {@link AppbaseRequestBuilder} object to delete a document.
 	 * 
 	 * @param type
 	 *            the type of the object
@@ -472,39 +458,40 @@ public class AppbaseClient {
 	 *         operations execution.
 	 */
 	public AppbaseRequestBuilder prepareDelete(String type, String id) {
-		return new AppbaseRequestBuilder(this,type,id,AppbaseRequestBuilder.Delete).url(getURL(type, id)).delete();
+		return new AppbaseRequestBuilder(this, type, id, AppbaseRequestBuilder.Delete).url(getURL(type, id)).delete();
 	}
-
-	
 
 	/**
 	 * When multiple requests need to be executed but in a sequence to reduce
 	 * the bandwidth usage.
 	 * 
-	 * @param request The request in bulk format.
+	 * @param request
+	 *            The request in bulk format.
 	 * 
-	 * @return The AppbaseRequestBuilder object for the query which needs to be executed.
+	 * @return The AppbaseRequestBuilder object for the query which needs to be
+	 *         executed.
 	 */
-	
-	
+
 	public AppbaseRequestBuilder prepareBulkExecute(String request) {
 
-		 return new AppbaseRequestBuilder(this,null,null,AppbaseRequestBuilder.Rest).url(getURL("_bulk")).post(request);
+		return new AppbaseRequestBuilder(this, null, null, AppbaseRequestBuilder.Rest).url(getURL("_bulk"))
+				.post(request);
 	}
+
 	/**
 	 * 
-	 * Prepare an {@link AppbaseRequestBuild} object to get the indexed objects
+	 * Prepare an {@link AppbaseRequestBuilder} object to get the indexed objects
 	 * by specifying type and id
 	 * 
 	 * @param type
 	 *            type of the required object
 	 * @param id
 	 *            id of the required object
-	 * @return the {@link AppbaseRequestBuild} object having the required
+	 * @return the {@link AppbaseRequestBuilder} object having the required
 	 *         configuration for get to execute
 	 */
 	public AppbaseRequestBuilder prepareGet(String type, String id) {
-		return new AppbaseRequestBuilder(this,null,null,AppbaseRequestBuilder.Rest).url(getURL(type, id)).get();
+		return new AppbaseRequestBuilder(this, null, null, AppbaseRequestBuilder.Rest).url(getURL(type, id)).get();
 	}
 
 	/**
@@ -524,13 +511,14 @@ public class AppbaseClient {
 	}
 
 	/**
-	 * Prepare an {@link AppbaseRequestBuild} object to get the mappings of the
+	 * Prepare an {@link AppbaseRequestBuilder} object to get the mappings of the
 	 * Application
 	 * 
 	 * @return returns the json document as {@link String} of the mappings
 	 */
 	public AppbaseRequestBuilder prepareGetMappings() {
-		return new AppbaseRequestBuilder(this,null,null,AppbaseRequestBuilder.Rest).url(this.URL + SEPARATOR + "_mapping").get();
+		return new AppbaseRequestBuilder(this, null, null, AppbaseRequestBuilder.Rest)
+				.url(this.URL + SEPARATOR + "_mapping").get();
 	}
 
 	/**
@@ -541,7 +529,7 @@ public class AppbaseClient {
 	public String getTypes() {
 
 		String result = getMappings();
-		
+
 		JsonParser parser = new JsonParser();
 		JsonObject object = parser.parse(result).getAsJsonObject();
 		Set<Map.Entry<String, JsonElement>> entries = object.getAsJsonObject(app).getAsJsonObject("mappings")
@@ -556,7 +544,7 @@ public class AppbaseClient {
 	}
 
 	/**
-	 * Prepare an {@link AppbaseRequestBuild} object for searching by adding the
+	 * Prepare an {@link AppbaseRequestBuilder} object for searching by adding the
 	 * search body
 	 * 
 	 * @param type
@@ -567,11 +555,12 @@ public class AppbaseClient {
 	 * @return returns the search result corresponding to the query
 	 */
 	public AppbaseRequestBuilder prepareSearch(String type, String body) {
-		return new AppbaseRequestBuilder(this,null,null,AppbaseRequestBuilder.Rest).url(getURL(type) + SEPARATOR + "_search").post(querify(body));
+		return new AppbaseRequestBuilder(this, null, null, AppbaseRequestBuilder.Rest)
+				.url(getURL(type) + SEPARATOR + "_search").post(querify(body));
 	}
 
 	/**
-	 * Prepare an {@link AppbaseRequestBuild} object for searching by adding the
+	 * Prepare an {@link AppbaseRequestBuilder} object for searching by adding the
 	 * query body within multiple types
 	 * 
 	 * @param type
@@ -582,37 +571,41 @@ public class AppbaseClient {
 	 */
 
 	public AppbaseRequestBuilder prepareSearch(String[] type, String body) {
-		return new AppbaseRequestBuilder(this,null,null,AppbaseRequestBuilder.Rest).url(getURL(type) + SEPARATOR + "_search").post(querify(body));
+		return new AppbaseRequestBuilder(this, null, null, AppbaseRequestBuilder.Rest)
+				.url(getURL(type) + SEPARATOR + "_search").post(querify(body));
 	}
 
 	/**
-	 * Prepare an {@link AppbaseRequestBuild} object to search by passing the
+	 * Prepare an {@link AppbaseRequestBuilder} object to search by passing the
 	 * query as a List of param objects. This will be added like query
 	 * parameters not in the body.
 	 * 
 	 * @param type
 	 *            type in which the search must take place
-	 * @param body
+	 * @param parameters
 	 *            List of Parameter objects which
 	 * @return returns the search result corresponding to the query
 	 */
-
-	///
-	///
-	///
-	///Needs to be changed
-	///
-	///
 	public AppbaseRequestBuilder prepareSearch(String type, List<Param> parameters) {
-		return new AppbaseRequestBuilder(this,null,null,AppbaseRequestBuilder.Rest).url(getURL(type) + SEPARATOR + "_search").addQueryParams(parameters)
-				.post(null);
+		return new AppbaseRequestBuilder(this, null, null, AppbaseRequestBuilder.Rest)
+				.url(getURL(type) + SEPARATOR + "_search").addQueryParams(parameters).post(null);
 
 	}
 
-
+	/**
+	 * The search results are streamed to the URL specified in webhoook.
+	 * 
+	 * @param type
+	 *            The type in which the search must be done.
+	 * @param query
+	 *            The {@link String} query which needs to be executed.
+	 * @param webhook
+	 *            The URL at which the search results need to be streamed.
+	 * @return The {@link AppbaseRequestBuilder} for the search stream to URL request.
+	 */
 	public AppbaseRequestBuilder prepareSearchStreamToURL(String type, String query, String webhook) {
 		JsonParser parser = new JsonParser();
-		query=querify(query);
+		query = querify(query);
 		JsonObject object = parser.parse(query).getAsJsonObject();
 		JsonObject o = parser.parse(webhook).getAsJsonObject();
 		object.add("webhooks", o.get("webhooks"));
@@ -622,41 +615,48 @@ public class AppbaseClient {
 		String path = ".percolator/webhooks-0-" + type + "-0-" + getSerializedJson(query);
 		return prepareIndex(path, object);
 	}
-	
-	private String getSerializedJson(String query){
+
+	private String getSerializedJson(String query) {
 		JsonParser parser = new JsonParser();
 		JsonObject object = parser.parse(query).getAsJsonObject();
 		Gson gson = new Gson();
 		TreeMap<String, Object> map = gson.fromJson(object, TreeMap.class);
 		String sortedJson = gson.toJson(map);
 		return sortedJson;
-		
+
 	}
-	
 
 	private JsonObject getSearchStreamJson(String type, String request) {
 		JsonObject json = new JsonObject();
-		Random r=new Random();
+		Random r = new Random();
 		int n = r.nextInt(5) + 5;
 		String id = "";
 		for (int i = 0; i < n + 1; i++) {
 			id += (char) (r.nextInt(25) + 97) + "";
 		}
-		json.addProperty("id",id);
+		json.addProperty("id", id);
 		if (basicauth != null)
 			json.addProperty("authorization", basicauth);
-		json.addProperty("path", app+SEPARATOR+type+SEPARATOR+"_search?streamonly=true");
+		json.addProperty("path", app + SEPARATOR + type + SEPARATOR + "_search?streamonly=true");
 
 		JsonParser parser = new JsonParser();
-		
+
 		json.add("body", parser.parse(request).getAsJsonObject());
 		json.addProperty("method", "POST");
 		return json;
 	}
-	
-	
+
+	/**
+	 * 
+	 * @param type
+	 *            type to be searched in.
+	 * @param request
+	 *            The search query.
+	 * @return The {@link AppbaseWebsocketRequest} created which needs to be
+	 *         executed to execute the query.
+	 */
 	public AppbaseWebsocketRequest prepareSearchStream(String type, String request) {
-		return new AppbaseWebsocketRequest(getSearchStreamJson(type, request),baseURL);
+		return new AppbaseWebsocketRequest(getSearchStreamJson(type, request), baseURL);
 	}
 
 }

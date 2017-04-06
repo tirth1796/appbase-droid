@@ -28,14 +28,22 @@ public class AppbaseWebsocketClient extends WebSocketClient {
 		trustAllHosts();
 	}
 
+	/**
+	 * Implements the method stated in {@link Stream} object passed in the
+	 * Constructor.
+	 */
 	@Override
 	public void onOpen(ServerHandshake handshakedata) {
 		if (on != null)
 			on.onOpen(handshakedata);
 		else
-			System.out.println("null "+handshakedata.toString());
+			System.out.println("null " + handshakedata.toString());
 	}
 
+	/**
+	 * Implements the method stated in {@link Stream} object passed in the
+	 * Constructor.
+	 */
 	@Override
 	public void onClose(int code, String reason, boolean remote) {
 		if (on != null)
@@ -44,24 +52,32 @@ public class AppbaseWebsocketClient extends WebSocketClient {
 			System.out.println("null close");
 	}
 
+	/**
+	 * Implements the method stated in {@link Stream} object passed in the
+	 * Constructor.
+	 */
 	@Override
 	public void onError(Exception ex) {
 		if (on != null)
 			on.onError(ex);
 		else
-			System.out.println("null "+ex.getMessage());
-		
+			System.out.println("null " + ex.getMessage());
+
 	}
 
+	/**
+	 * Implements the method stated in {@link Stream} object passed in the
+	 * Constructor.
+	 */
 	@Override
 	public void onMessage(String message) {
 		if (on != null)
 			on.onMessage(message);
 		else
-			System.out.println("null "+message);
+			System.out.println("null " + message);
 	}
 
-	public void trustAllHosts() {
+	private void trustAllHosts() {
 		// Create a trust manager that does not validate certificate chains
 		TrustManager[] trustAllCerts = new TrustManager[] { new X509TrustManager() {
 			public java.security.cert.X509Certificate[] getAcceptedIssuers() {

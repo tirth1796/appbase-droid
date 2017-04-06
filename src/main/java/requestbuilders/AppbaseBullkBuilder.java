@@ -1,3 +1,4 @@
+//Done
 package requestbuilders;
 
 import java.util.ArrayList;
@@ -9,14 +10,21 @@ import client.AppbaseClient;
 import okhttp3.Response;
 
 public class AppbaseBullkBuilder {
-	ArrayList<AppbaseRequestBuilder> req;
+	private ArrayList<AppbaseRequestBuilder> req;
 
 	public AppbaseBullkBuilder() {
 		req = new ArrayList<AppbaseRequestBuilder>();
 	}
 
-	public AppbaseBullkBuilder add(AppbaseRequestBuilder a) {
-		req.add(a);
+	/**
+	 * 
+	 * @param appbaseRequestBuilder
+	 *            The requested to be done along with the other bulk operations
+	 *            is added.
+	 * @return The modified {@link AppbaseBullkBuilder}.
+	 */
+	public AppbaseBullkBuilder add(AppbaseRequestBuilder appbaseRequestBuilder) {
+		req.add(appbaseRequestBuilder);
 		return this;
 	}
 
@@ -26,18 +34,24 @@ public class AppbaseBullkBuilder {
 
 	}
 
+	/**
+	 * The request builder is executed in bulk format for all the query builders
+	 * provided.
+	 * 
+	 * @return {@link Response} for the bulk operation of all the queries.
+	 */
 	public Response execute() {
 		String jsonBody = "";
 		AppbaseRequestBuilder curr = null;
-		AppbaseClient ac=null;
+		AppbaseClient ac = null;
 		for (int i = 0; i < req.size(); i++) {
 			JsonObject j = new JsonObject();
 			curr = req.get(i);
 			if (curr == null) {
 				System.err.println("null AppbaseRequestBuilderObject at possition" + i);
 			} else {
-				if(ac==null){
-					ac=curr.ac;
+				if (ac == null) {
+					ac = curr.ac;
 				}
 				if (curr.method == AppbaseRequestBuilder.Rest) {
 					System.err.println("AppbaseBulkBuilder does not support the method at position " + i);
@@ -62,6 +76,6 @@ public class AppbaseBullkBuilder {
 			}
 		}
 		System.out.println(jsonBody);
-		return ac.prepareBulkExecute( jsonBody).execute();
+		return ac.prepareBulkExecute(jsonBody).execute();
 	}
 }

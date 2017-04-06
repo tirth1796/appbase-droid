@@ -1,3 +1,4 @@
+//done
 package requestbuilders;
 
 import java.net.URI;
@@ -10,26 +11,35 @@ import client.AppbaseWebsocketClient;
 
 public class AppbaseWebsocketRequest {
 	JsonObject json;
-	String baseURL; 
-	public AppbaseWebsocketRequest(JsonObject json,String baseURL) {
+	String baseURL;
+
+	public AppbaseWebsocketRequest(JsonObject json, String baseURL) {
 		super();
 		this.json = json;
-		this.baseURL=baseURL;
+		this.baseURL = baseURL;
 		changeURL();
 	}
-	
-	public void changeURL(){
+
+	private void changeURL() {
 		System.out.println(baseURL.charAt(4));
-		if(baseURL.charAt(4)=='s'){
-			baseURL="wss"+baseURL.substring(5);
-		}else{	
-			baseURL="ws"+baseURL.substring(4);
+		if (baseURL.charAt(4) == 's') {
+			baseURL = "wss" + baseURL.substring(5);
+		} else {
+			baseURL = "ws" + baseURL.substring(4);
 		}
 		System.out.println(baseURL);
 	}
-	
-	public AppbaseWebsocketClient execute(Stream appbaseOnMessage){
-		URI uri=null;
+
+	/**
+	 * 
+	 * @param appbaseOnMessage
+	 *            The implementation of abstract methods is used once the
+	 *            connection has been established.
+	 * @return Connects to the websocket and implements the methods onMessage
+	 *         (and maybe other overridden ones of the Stream object).
+	 */
+	public AppbaseWebsocketClient execute(Stream appbaseOnMessage) {
+		URI uri = null;
 		try {
 			uri = new URI(baseURL);
 		} catch (URISyntaxException e2) {

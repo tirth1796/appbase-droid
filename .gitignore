@@ -4,3 +4,6 @@
 .settings/
 appbase/
 target/
+.Rhistory
+.m2/
+.recommenders/
